@@ -1,200 +1,148 @@
 """
-Lab-1 : Applying Data Preprocessing Techniques to the Titanic Dataset
-Student : Soumya   |   Section B  |  Roll No. 10  |  Batch B1
-Goal    : Clean, transform and scale the Titanic dataset so that it becomes
-          suitable for training a machine learning classifier.
+Lab-1 : Data Preprocessing on the Titanic Dataset
+Name    : Soumya
+Section : B          Roll No : 10          Batch : B1
+Aim     : To study and apply Data Preprocessing techniques on the given dataset
+          and prepare the Titanic dataset for training with a machine learning
+          algorithm by applying suitable data preprocessing techniques.
 """
 
-import warnings
-
-import matplotlib
-import matplotlib.pyplot as plt
-import numpy as np
+# Output 1 : Importing the required libraries
 import pandas as pd
+import numpy as np
+
+import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score
+
+from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import StandardScaler
+
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, StandardScaler
 
-matplotlib.use("Agg")
+import warnings
 warnings.filterwarnings("ignore")
-pd.set_option("display.width", 120)
-pd.set_option("display.max_columns", 25)
 
+# Output 2 : Loading the dataset
+df = pd.read_csv("titanic.csv")
 
-def banner(step, title):
-    print(f"STEP {step} : {title}")
+# Output 3 : First five records
+print(df.head())
 
+# Output 4 : Last five records
+print(df.tail())
 
-# ======================================================================
-# STEP 1 : READ THE DATA
-# ======================================================================
-banner(1, "READING THE TITANIC DATA FILE")
-data = pd.read_csv("titanic.csv")
-print("Rows and columns present in the file :", data.shape)
-print("Column names :", ", ".join(data.columns))
-print("\nSample records from the top of the file:\n")
-print(data.head())
+# Output 5 : Shape of the dataset
+print(df.shape)
 
-# ======================================================================
-# STEP 2 : EXAMINE DATA TYPES AND SPREAD
-# ======================================================================
-banner(2, "EXAMINING DATA TYPES AND SPREAD")
-data.info()
-print("\nSpread of the numeric columns:\n")
-print(data.describe().T.round(2))
+# Output 6 : Structure of the dataset
+df.info()
 
-# ======================================================================
-# STEP 3 : LOCATE THE GAPS IN THE DATA
-# ======================================================================
-banner(3, "LOCATING THE GAPS IN THE DATA")
-gaps = data.isnull().sum()
-gaps = gaps[gaps > 0].sort_values(ascending=False)
-report = pd.DataFrame({"Blanks": gaps, "Percent": (gaps / len(data) * 100).round(2)})
-print(report)
-print("\nRepeated rows found :", data.duplicated().sum())
+# Output 7 : Statistical summary
+print(df.describe())
 
-plt.figure(figsize=(6.5, 3.6), facecolor="white")
-bars = plt.bar(report.index, report.Percent, color="#5b8ff9", width=0.5)
-for b, v in zip(bars, report.Percent):
-    plt.text(b.get_x() + b.get_width() / 2, v + 1.5, f"{v}%", ha="center", fontsize=9)
-plt.ylabel("Percentage of blank values")
-plt.ylim(0, 90)
-plt.title("Percentage of Blank Values per Column")
-plt.tight_layout()
-plt.savefig("out_s/fig_missing.png", dpi=130, facecolor="white")
-plt.close()
+# Output 8 : Count of missing values
+print(df.isnull().sum())
 
-# ======================================================================
-# STEP 4 : FILL IN THE GAPS
-# ======================================================================
-banner(4, "FILLING IN THE GAPS")
-age_lookup = data.groupby(["Pclass", "Sex"])["Age"].median()
-print("Median age reference table used for filling:\n")
-print(age_lookup.round(1))
-data["Age"] = data.groupby(["Pclass", "Sex"])["Age"].transform(lambda s: s.fillna(s.median()))
+# Output 9 : Unique values in the Embarked column
+print(df["Embarked"].unique())
 
-top_port = data["Embarked"].value_counts().idxmax()
-data["Embarked"] = data["Embarked"].fillna(top_port)
-data["Has_Cabin"] = np.where(data["Cabin"].isnull(), 0, 1)
+# Output 10 : Label encoding the Embarked column
+df["Embarked"] = df["Embarked"].replace("S", 0)
+df["Embarked"] = df["Embarked"].replace("C", 1)
+df["Embarked"] = df["Embarked"].replace("Q", 2)
+print(df.head())
 
-print(f"\nEmbarked blanks replaced with the most frequent port : {top_port}")
-print("Cabin turned into the indicator column 'Has_Cabin' instead of being filled.")
-print("Blanks remaining in Age / Embarked :",
-      int(data["Age"].isnull().sum()), "/", int(data["Embarked"].isnull().sum()))
+# Output 11 : Unique values in the Sex column
+print(df["Sex"].unique())
 
-# ======================================================================
-# STEP 5 : REMOVE COLUMNS THAT CANNOT HELP THE MODEL
-# ======================================================================
-banner(5, "REMOVING COLUMNS THAT CANNOT HELP THE MODEL")
-junk = ["PassengerId", "Name", "Ticket", "Cabin"]
-data.drop(columns=junk, inplace=True)
-print("Columns removed :", junk)
-print("Size of the table now :", data.shape)
-print("Columns retained :", list(data.columns))
+# Output 12 : Label encoding the Sex column
+df["Sex"] = df["Sex"].replace("male", 0)
+df["Sex"] = df["Sex"].replace("female", 1)
+print(df.head())
 
-# ======================================================================
-# STEP 6 : LIMIT THE EXTREME VALUES
-# ======================================================================
-banner(6, "LIMITING THE EXTREME VALUES WITH THE IQR RULE")
+# Output 13 : Handling missing values and dropping irrelevant columns
+df["Age"] = df["Age"].fillna(df["Age"].median())
+df["Embarked"] = df["Embarked"].fillna(df["Embarked"].mode()[0])
+df.drop("PassengerId", axis=1, inplace=True)
+df.drop("Name", axis=1, inplace=True)
+df.drop("Ticket", axis=1, inplace=True)
+df.drop("Cabin", axis=1, inplace=True)
+print(df.head())
 
+# Output 14 : Counting duplicate rows
+print(df.duplicated().sum())
 
-def iqr_limits(series):
-    q1, q3 = series.quantile([0.25, 0.75])
-    spread = q3 - q1
-    return q1 - 1.5 * spread, q3 + 1.5 * spread, q1, q3, spread
+# Output 15 : Removing duplicate rows
+df.drop_duplicates(inplace=True)
 
+# Output 16 : Boxplot of Age
+sns.boxplot(x=df["Age"])
+plt.show()
 
-plt.figure(figsize=(7.5, 3.4), facecolor="white")
-plt.subplot(1, 2, 1)
-sns.boxplot(y=data["Fare"], color="#f6c667", width=0.35)
-plt.title("Fare : original values")
+# Output 17 : Boxplot of Fare
+sns.boxplot(x=df["Fare"])
+plt.show()
 
-for col in ["Age", "Fare"]:
-    lo, hi, q1, q3, spread = iqr_limits(data[col])
-    flagged = int(((data[col] < lo) | (data[col] > hi)).sum())
-    data[col] = data[col].clip(lo, hi)
-    print(f"{col:<5} Q1={q1:7.2f} Q3={q3:7.2f} IQR={spread:7.2f} "
-          f"allowed=[{lo:7.2f} , {hi:7.2f}] extreme values pulled in = {flagged}")
+# Output 18 : Boxplot of Parch
+sns.boxplot(x=df["Parch"])
+plt.show()
 
-plt.subplot(1, 2, 2)
-sns.boxplot(y=data["Fare"], color="#7ecba1", width=0.35)
-plt.title("Fare : after limiting")
-plt.tight_layout()
-plt.savefig("out_s/fig_outlier.png", dpi=130, facecolor="white")
-plt.close()
+# Output 19 : Distribution of Age
+sns.histplot(df["Age"], kde=True)
+plt.show()
 
-print("\nRange of Age and Fare once the limits are applied:\n")
-print(data[["Age", "Fare"]].agg(["min", "max", "mean", "std"]).round(2))
+# Output 20 : Count of survivors
+sns.countplot(x="Survived", data=df)
+plt.show()
 
-# ======================================================================
-# STEP 7 : BUILD NEW COLUMNS FROM THE OLD ONES
-# ======================================================================
-banner(7, "BUILDING NEW COLUMNS FROM THE OLD ONES")
-data["FamilySize"] = data["SibSp"] + data["Parch"] + 1
-data["IsAlone"] = np.where(data["FamilySize"] == 1, 1, 0)
-print("FamilySize = SibSp + Parch + 1  (the passenger is counted as well)")
-print("IsAlone    = 1 when FamilySize equals 1, otherwise 0\n")
-print("Distribution of the new IsAlone column:")
-print(data["IsAlone"].value_counts().rename({0: "With family", 1: "Travelling alone"}))
-print("\nSample of the derived columns:\n")
-print(data[["SibSp", "Parch", "FamilySize", "IsAlone"]].head(6))
+# Output 21 : Gender against survival
+sns.countplot(x="Sex", hue="Survived", data=df)
+plt.show()
 
-# ======================================================================
-# STEP 8 : TURN TEXT COLUMNS INTO NUMBERS
-# ======================================================================
-banner(8, "TURNING TEXT COLUMNS INTO NUMBERS")
-encoder = LabelEncoder()
-data["Sex"] = encoder.fit_transform(data["Sex"])
-print("LabelEncoder mapping for Sex :", dict(zip(encoder.classes_, range(len(encoder.classes_)))))
+# Output 22 : Age against Fare
+sns.scatterplot(x="Age", y="Fare", data=df)
+plt.show()
 
-data = pd.get_dummies(data, columns=["Embarked"], prefix="Port", drop_first=True, dtype=int)
-print("Embarked expanded into :", [c for c in data.columns if c.startswith("Port")])
-print("The first category was dropped so that the dummy columns stay independent.\n")
-print(data.head())
+# Output 23 : Correlation heatmap
+plt.figure(figsize=(10, 8))
+numeric_df = df.select_dtypes(include=['number'])
+sns.heatmap(numeric_df.corr(), annot=True, cmap='inferno')
+plt.show()
 
-# ======================================================================
-# STEP 9 : BRING THE NUMBERS TO A COMMON SCALE
-# ======================================================================
-banner(9, "BRINGING THE NUMBERS TO A COMMON SCALE")
-to_scale = ["Age", "Fare", "FamilySize"]
-print("Values before scaling:\n")
-print(data[to_scale].head(6).round(2))
+# Output 24 : Passenger class distribution
+plt.figure(figsize=(6, 4))
+sns.countplot(x="Pclass", data=df)
+plt.title("passenger class distribution")
+plt.xlabel("passenger class")
+plt.ylabel("count")
+plt.show()
 
-data[to_scale] = StandardScaler().fit_transform(data[to_scale])
+# Output 25 : Passengers by embarked port
+plt.figure(figsize=(6, 4))
+sns.countplot(x="Embarked", data=df)
+plt.title("passenger by embarked port")
+plt.show()
 
-print("\nValues after scaling:\n")
-print(data[to_scale].head(6).round(2))
-print("\nMean and standard deviation of the scaled columns:")
-print(data[to_scale].agg(["mean", "std"]).round(2))
+# Output 26 : Fare distribution
+plt.figure(figsize=(6, 4))
+plt.hist(df["Fare"], bins=20)
+plt.title("fare distribution")
+plt.xlabel("fare")
+plt.ylabel("frequemcy")
+plt.show()
 
-# ======================================================================
-# STEP 10 : SEPARATE THE DATA AND CONFIRM IT IS READY
-# ======================================================================
-banner(10, "SEPARATING THE DATA AND CONFIRMING IT IS READY")
-X = data.drop(columns="Survived")
-y = data["Survived"]
-X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, random_state=7, stratify=y)
+# Output 27 : Separating features and target
+X = df.drop("Survived", axis=1)
+y = df["Survived"]
 
-print("Inputs :", X.shape, "  Target :", y.shape)
-print("Used for training :", X_tr.shape[0], "rows    Kept for testing :", X_te.shape[0], "rows")
-print("Blanks anywhere in the final table :", int(data.isnull().sum().sum()))
-print("Column types present :", sorted(set(map(str, data.dtypes))))
+# Output 28 : Feature scaling
+scaler = StandardScaler()
+X[["Age", "Fare"]] = scaler.fit_transform(X[["Age", "Fare"]])
+print(X.head(15))
 
-clf = LogisticRegression(max_iter=1000).fit(X_tr, y_tr)
-score = accuracy_score(y_te, clf.predict(X_te))
-print(f"\nTrial run - Logistic Regression scored {score*100:.2f}% on the unseen rows.")
-
-data.to_csv("out_s/titanic_ready.csv", index=False)
-print("Processed table written to 'titanic_ready.csv' with size", data.shape)
-print("\nFirst rows of the processed table:\n")
-print(data.head())
-
-plt.figure(figsize=(7.2, 5.0), facecolor="white")
-sns.heatmap(data.corr().round(2), annot=True, fmt=".2f", cmap="YlGnBu",
-            annot_kws={"size": 7}, linewidths=0.4, cbar_kws={"shrink": 0.8})
-plt.title("How the Processed Columns Relate to One Another")
-plt.tight_layout()
-plt.savefig("out_s/fig_corr.png", dpi=130, facecolor="white")
-plt.close()
+# Output 29 : Splitting into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.20, random_state=4)
+print("training data:", X_train.shape)
+print("testing data:", X_test.shape)
+print(X_train.head())
